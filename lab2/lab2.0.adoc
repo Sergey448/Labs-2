@@ -73,7 +73,7 @@ int main()
   return 0;
 }
 
-image::yngWYYJO98E.jpg[]
+image::lab2off.jpg[]
 
 * Следующим пунктом реализуем зажигание диода
 [source, c]
@@ -107,4 +107,4 @@ GPIOA::ODR::ODR5::High::Set();
 
 Результатом представлен на фото ниже:
 
-image::CXlDJpp1ypU.jpg[]
+image::lab2on.jpg[]
