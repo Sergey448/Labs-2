@@ -81,4 +81,4 @@ int main()
 = *Результат пргограммы*
 
 .Результат программы
-image::vid.gif[]
+image::vidos.gif[]
