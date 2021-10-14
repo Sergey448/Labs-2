@@ -25,11 +25,8 @@
 [source, c]
 #include "gpioaregisters.hpp" //for GPIOC
 #include "gpiocregisters.hpp" //for GPIOC
-#include "rccregisters.hpp" //for RCC
-
-
+#include "rccregisters.hpp"   //for RCC
 std::uint32_t SystemCoreClock = 16'000'000U;
-
 extern "C" {
 int __low_level_init(void)
 {
@@ -37,28 +34,23 @@ int __low_level_init(void)
 RCC::CR::HSION::On::Set();
 while (RCC::CR::HSIRDY::NotReady::IsSet())
 {
-
-}
-//Switch system clock on external oscillator
-RCC::CFGR::SW::Hsi::Set();
-while (!RCC::CFGR::SWS::Hsi::IsSet())
-{
-
-}
-
-RCC::APB2ENR::SYSCFGEN::Enable::Set();
-
-return 1;
+  }
+  //Switch system clock on external oscillator
+  RCC::CFGR::SW::Hsi::Set();
+  while (!RCC::CFGR::SWS::Hsi::IsSet())
+  {
+  }
+  RCC::APB2ENR::SYSCFGEN::Enable::Set();
+  return 1;
 }
 }
 int delay(int cycles)
 {
-for(int i=0; i < cycles; ++i)
-{
-asm volatile ("");
+ for(int i=0; i < cycles; ++i)
+ {
+   asm volatile ("");
+ }
 }
-}
-
 int main()
 {
 RCC::AHB1ENR::GPIOAEN::Enable::Set();
@@ -67,28 +59,23 @@ RCC::AHB1ENR::GPIOCEN::Enable::Set();
 GPIOC::MODER::MODER5::Output::Set();
 GPIOC::MODER::MODER8::Output::Set();
 GPIOC::MODER::MODER9::Output::Set();
-
-for(;;)
-{
-
-
-uint32_t* ptrPaOdr = reinterpret_cast<uint32_t*>(0x40020014);
-uint32_t* ptrPcOdr = reinterpret_cast<uint32_t*>(0x40020814);
-*ptrPaOdr ^= static_cast<uint32_t>(1 « 5);
-*ptrPcOdr ^= static_cast<uint32_t>(1 « 5);
-*ptrPcOdr ^= static_cast<uint32_t>(1 « 8);
-*ptrPcOdr ^= static_cast<uint32_t>(1 « 9);
-delay(1000000);
-*ptrPaOdr ^= static_cast<uint32_t>(1 « 5);
-*ptrPcOdr ^= static_cast<uint32_t>(1 « 5);
-*ptrPcOdr ^= static_cast<uint32_t>(1 « 8);
-*ptrPcOdr ^= static_cast<uint32_t>(1 « 9);
-delay(1000000);
-
+      for(;;)
+       {
+           int32_t* ptrPcOdr = reinterpret_cast<uint32_t*>(0x40020814);
+           uint32_t* ptrPaOdr = reinterpret_cast<uint32_t*>(0x40020014);
+          *ptrPaOdr ^=  static_cast<uint32_t>(1 << 5);
+          *ptrPcOdr ^=  static_cast<uint32_t>(1 << 5);    
+          *ptrPcOdr ^=  static_cast<uint32_t>(1 << 8);
+          *ptrPcOdr ^=  static_cast<uint32_t>(1 << 9);
+          delay(1000000);
+          *ptrPaOdr ^=static_cast<uint32_t>(1 << 5);
+          *ptrPcOdr ^=static_cast<uint32_t>(1 << 5);
+          *ptrPcOdr ^=static_cast<uint32_t>(1 << 8);
+          *ptrPcOdr ^=static_cast<uint32_t>(1 << 9);
+          delay(1000000);
+       }
+     return 1;
 }
-return 1;
-}
-
 = *Результат программы*
 
 .Результат программы
