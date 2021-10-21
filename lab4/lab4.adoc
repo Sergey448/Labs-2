@@ -60,23 +60,44 @@ RCC::AHB1ENR::GPIOCEN::Enable::Set();
 GPIOC::MODER::MODER5::Output::Set();
 GPIOC::MODER::MODER8::Output::Set();
 GPIOC::MODER::MODER9::Output::Set();
-      for(;;)
+int32_t* ptrPcOdr = reinterpret_cast<uint32_t*>(0x40020814);
+uint32_t* ptrPaOdr = reinterpret_cast<uint32_t*>(0x40020014);
+      for(int j=0;j<1000;++j)
        {
-           int32_t* ptrPcOdr = reinterpret_cast<uint32_t*>(0x40020814);
-           uint32_t* ptrPaOdr = reinterpret_cast<uint32_t*>(0x40020014);
           *ptrPaOdr ^=  static_cast<uint32_t>(1 << 5);
-          *ptrPcOdr ^=  static_cast<uint32_t>(1 << 5);    
-          *ptrPcOdr ^=  static_cast<uint32_t>(1 << 8);
-          *ptrPcOdr ^=  static_cast<uint32_t>(1 << 9);
+          *ptrPCODR ^= static_cast<uint32_t>((1 << 5) | ( 1<< 8) | (1<<9));
           delay(1000000);
           *ptrPaOdr ^=static_cast<uint32_t>(1 << 5);
-          *ptrPcOdr ^=static_cast<uint32_t>(1 << 5);
-          *ptrPcOdr ^=static_cast<uint32_t>(1 << 8);
-          *ptrPcOdr ^=static_cast<uint32_t>(1 << 9);
+          *ptrPCODR ^= static_cast<uint32_t>((1 << 5) | ( 1<< 8) | (1<<9));
           delay(1000000);
        }
      return 1;
 }
+
+[cols="1,1,1", hrows=1]
+|====
+.1+|a
+1+|b
+1+|a^b
+
+|0
+|0
+|0
+
+|0
+|1
+|1
+
+|1
+|0
+|1
+
+|1
+|1
+|0
+
+|====
+
 = *Результат программы*
 
 .Результат программы
