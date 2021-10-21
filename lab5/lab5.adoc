@@ -4,7 +4,7 @@
 :toc:
 :toc-title: Оглавление:
 
-Чепульская КЭ-413 +
+Соловьев КЭ-413 +
 
 = *Задание* +
 
@@ -110,5 +110,5 @@ using Ready = FieldValue<RCC_CR_PLLRDY_Values, BaseType, 1U> ;
 = *Результат программы*
 
 .Результат программы
-image::VID_20211021_122738.gif[]
+image::IMG_6513.gif[]
 
