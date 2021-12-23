@@ -1,4 +1,4 @@
-= Выполнил: Соловьев А.А.
+= Выполнил: Истомин С.В.
 
 :toc:
 :toc-title: Оглавление
@@ -27,6 +27,13 @@ image::tKWDTDFpECY.jpg[]
 std::uint32_t SystemCoreClock = 16'000'000U;
 extern "C"
 {
+  void delay1 (uint32_t value)
+{
+for(uint32_t i = 0; i < value; ++i)
+{
+ asm volatile ("");
+}
+}
 int __low_level_init(void)
 {
 //Switch on external 16 MHz oscillator
@@ -39,11 +46,8 @@ RCC::CFGR::SW::Hse::Set();
 while (!RCC::CFGR::SWS::Hse::IsSet())
 {
 }
-//?????????? ???? ? ? ???? ????????????
 RCC::AHB1ENR::GPIOAEN::Enable::Set();
-//?????????? ???? ? ? ???? ????????????
 RCC::AHB1ENR::GPIOCEN::Enable::Set();
-  //????????? ?????? 5,5,8,9,13
   GPIOA::OSPEEDR::OSPEEDR5::MediumSpeed::Set();
   GPIOA::MODER::MODER5::Output::Set();
   GPIOC::OSPEEDR::OSPEEDR5::MediumSpeed::Set();
@@ -64,6 +68,7 @@ for(;;)
   {
     if ((GPIOC::IDR::IDR13::Low::IsSet()) && (flag == 0))
       {
+        delay1(300000);
         GPIOA::ODR::ODR5::High::Set();
         GPIOC::ODR::ODR5::High::Set();
         GPIOC::ODR::ODR8::High::Set();
@@ -73,6 +78,7 @@ for(;;)
       }
     if ((GPIOC::IDR::IDR13::Low::IsSet()) && (flag == 1) )
       {
+        delay1(300000);
         GPIOA::ODR::ODR5::Low::Set();
         GPIOC::ODR::ODR5::Low::Set();
         GPIOC::ODR::ODR8::Low::Set();
@@ -85,4 +91,4 @@ return 1;
 }
 
 == Результат программы
-image::IMG_6650.gif[]
+image::lab6.gif[]
