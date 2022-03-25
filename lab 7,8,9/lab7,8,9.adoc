@@ -1,0 +1,358 @@
+:figure-caption: Рисунок
+:table-caption: Таблица
+= Лабораторная работа №6
+:toc:
+:toc-title: Оглавление:
+
+Выполнил: Соловьев А.А.
+
+= Задание
+
+1) Сделать программу с использование ООП которая выполняет следющие действия:  настраивать любой режим моргания светодиодов (Елочка, Моргунчик, Шахматка), с любым количеством светодиодов, привязанных к любым пинам портов..
+ 
+2) Разрисовать архитектуру и дизайн ПО, а имеено классы, методы классов и взаимодействия классов в StarUML.
+Можно сгенерировать заготовки классов прямо из программы. Можно сделать все самим
+   По архитектуре написать и реализовать классы и потом и логику работы программы.
+Все это должно быть в отчете.
+
+= Схема в StarUML
+
+Для начала создадим архитектуру классов для дальнейшей реализации ее в IAR, для этого воспользуемся StarUML.
+
+Объектно-ориентированное программирование (ОПП) - совокупность принципов, технлогий, а также инструментальных средств для создания программных систем на основе архитектуры взаимодействия объектов.
+
+Основные принципы ОПП:
+
+. абстракция;
+
+. наследование;
+
+. инкапсуляция;
+
+. полиморфизм.
+
+Прежде чем приступить к написанию кода нужно разработать структуру или архитектуру программы. Она будет включать:
+
+. интерфейсы (абстрактный класс) для кнопки и светодиода;
+
+. контейнер (контроллер) для светодиодов, который содержит в себе массив указателей на интерфейс. Контроллер светодиодов должен поддерживать 3 режима работы светодоиодов (моргают все светодиоды (режим моргунчик, класс All), режим "елочка" (класс Tree), режим "шахматы" (класс Chess)).
+
+== *Архитектура классов в StarUML*
+image::image.png[]
+
+= Создание кода
+
+Для начала создадим три виртаульных класса:
+
+[source, cpp]
+#pragma once
+class IButton
+{
+public:
+virtual bool IsPressed() = 0;
+};
+
+[source, cpp]
+#pragma once
+class ILed
+{
+public:
+virtual void toggle() = 0;
+virtual void switchoff() = 0;
+};
+
+[source, cpp]
+#pragma once
+class IMode
+{
+public:
+virtual void toggle() const = 0;
+virtual void init() const = 0;
+};
+
+Виртуа́льное насле́дование (англ. virtual inheritance) в языке программирования C++ — один из вариантов наследования, который нужен для решения некоторых проблем, порождаемых наличием возможности множественного наследования (особенно «ромбовидного наследования»), путём разрешения неоднозначности того, методы которого из суперклассов (непосредственных классов-предков) необходимо использовать. Оно применяется в тех случаях, когда множественное наследование вместо предполагаемой полной композиции свойств классов-предков приводит к ограничению доступных наследуемых свойств вследствие неоднозначности. Базовый класс, наследуемый множественно, определяется виртуальным с помощью ключевого слова virtual.
+
+=== Класс Led
+
+Данный класс отвечает за моргание светодиода
+[source, cpp]
+#pragma once
+#include "gpiocregisters.hpp" //for GPIOC
+#include "gpioaregisters.hpp"
+#include "iLed.h" // for ILed
+template<typename Port, uint32_t pinNum>
+class Led : public ILed
+{
+public:
+   void toggle() override
+    {
+      Port::ODR::Toggle(1U << pinNum);
+    }
+   void switchoff() override
+    {
+      Port::BSRR::Write(pinNum << 16);
+    }
+};
+
+=== Класс leds
+Данный класс нужен для отключения светодиодов, чтобы не сбивался порядок мигания при переключении режимов.
+[source, cpp]
+#pragma once
+#include "iLed.h"
+#include "Leed.h"
+#include "gpioaregisters.hpp" //for GPIOC
+#include "gpiocregisters.hpp" //for GPIOC
+template <auto* ...pArgs>
+struct Leds
+{
+ILed* pLeds[sizeof ...(pArgs)] = {pArgs...};
+void toggle()
+{
+for (auto it: pLeds)
+{
+it-> toggle();
+}
+}
+     void switchoff()
+    {
+      for (auto it: pLeds)
+      {
+        it->switchoff();
+      }
+    }
+};
+
+
+=== Класс Button
+
+Данный класс отвечает з кнопку, с помощью которой осуществляется переключение светодиодов.
+
+[source, cpp]
+#pragma once
+#include "gpiocregisters.hpp"
+#include "IButton.h"
+template<typename Port, uint32_t pinNum>
+class Button: public IButton
+{
+public:
+  void delay1 (uint32_t value)
+{
+for(uint32_t i = 0; i < value; ++i)
+{
+    asm volatile ("");
+}
+}
+  bool IsPressed() override
+ {
+   bool result = false;
+   if ((Port::IDR::Get()&(1U << pinNum)) != (1<< pinNum))
+   {
+     delay1(3000000U);
+    result = true;
+   }
+ return result;
+ }
+};
+
+Далее пропишем режимы для нашей гирлянды.
+
+=== Класс ALL
+
+[source, cpp]
+#pragma once
+#include "imode.h"
+template <auto& TLeds>
+class All : public IMode
+{
+public:
+  void toggle() const override
+  {
+    TLeds.toggle();
+  }
+    void init() const override
+  {   
+    TLeds.switchoff();
+  }
+};
+
+=== Класс TREE
+
+[source, cpp]
+#pragma once
+#include "imode.h"
+template <auto& TLeds>
+class Tree : public IMode
+{
+public:
+void toggle() const override
+{
+  for ( uint32_t index =0; index < std::size(TLeds.pLeds); ++index)
+ {
+    TLeds.pLeds[index]->toggle();
+   for (int i = 0; i < 500000; ++i)
+  {
+   asm volatile("");
+  } 
+}
+}
+void init() const override
+{
+   TLeds.switchoff();
+}
+};
+
+=== Класс CHESS
+
+[source, cpp]
+#pragma once
+#include "imode.h"
+template <auto& TLeds>
+class Chess : public IMode
+{
+public:
+  void toggle() const override
+ {
+   TLeds.toggle();
+ }
+  void init() const override
+ {
+    for ( uint32_t index =0; index < std::size(TLeds.pLeds); ++index)
+  {
+   if ((index %2)==0)
+    {
+     TLeds.pLeds[index]->toggle();
+    }
+  }  
+ }
+};
+
+=== Класс MODES
+
+Данный класс помогает нам осуществить переключение написанных выше режимов.
+
+[source, cpp]
+#pragma once
+template <auto* ...pArgs>
+struct Modes
+{
+public:
+  void update()
+  {
+    pModes[modeIndex]->toggle();
+  }
+  void nextMode()
+  {
+    modeIndex++;
+    if(modeIndex == std::size(pModes))
+    {
+      modeIndex = 0U;
+    }
+    pModes[modeIndex]->init();
+  }
+private:
+  uint32_t modeIndex = 0;
+  IMode* pModes[sizeof ...(pArgs)] = {pArgs...};             
+ };
+
+=== Класс MAIN
+
+[source, cpp]
+#include "gpioaregisters.hpp" //for GPIOC
+#include "gpiocregisters.hpp" //for GPIOC
+#include "rccregisters.hpp"   //for RCC
+#include <iostream>
+#include "Leed.h"
+#include "Button.h"
+#include "iLed.h"
+#include "leds.h"
+#include "chess.h"
+#include "All.h"
+#include "Tree.h"
+#include "modes.h"
+#include "tim2registers.hpp"   //for SPI2
+#include "nvicregisters.hpp"  //for NVIC
+using namespace std ;
+constexpr auto SystemClock = 16'000'000U;
+constexpr auto TimerClock = 1'000U;
+constexpr auto TimerPrescaler = SystemClock / TimerClock;
+extern "C"
+ {
+   int __low_level_init(void)
+   {
+    //Switch on external 16 MHz oscillator
+  RCC::CR::HSEON::On::Set();
+  while (RCC::CR::HSERDY::NotReady::IsSet())
+  {
+  }
+  //Switch system clock on external oscillator
+  RCC::CFGR::SW::Hse::Set();
+  while (!RCC::CFGR::SWS::Hse::IsSet())
+  {
+  }
+  RCC::APB2ENR::SYSCFGEN::Enable::Set();
+  RCC::AHB1ENR::GPIOAEN::Enable::Set();
+  RCC::AHB1ENR::GPIOCEN::Enable::Set();
+  GPIOA::OSPEEDR::OSPEEDR5::MediumSpeed::Set();
+  GPIOA::MODER::MODER5::Output::Set();
+  GPIOC::OSPEEDR::OSPEEDR13::MediumSpeed::Set();
+  GPIOC::MODER::MODER13::Input::Set();
+  GPIOC::OSPEEDR::OSPEEDR5::MediumSpeed::Set();
+  GPIOC::MODER::MODER5::Output::Set();
+  GPIOC::OSPEEDR::OSPEEDR8::MediumSpeed::Set();
+  GPIOC::MODER::MODER8::Output::Set();
+  GPIOC::OSPEEDR::OSPEEDR9::MediumSpeed::Set();
+  GPIOC::MODER::MODER9::Output::Set();
+   //âòîðîé òàéìåð
+    RCC::APB1ENR::TIM2EN::Enable::Set();
+    TIM2::PSC::Write(TimerPrescaler);
+  return 1;
+ }
+}
+void delayMs(uint32_t value)
+{
+  const auto delay = (TimerClock * value) / 1000U ; //check
+  TIM2::ARR::Write(delay);
+  TIM2::SR::UIF::NoInterruptPending::Set();
+  TIM2::CNT::Write(0U);
+  TIM2::CR1::CEN::Enable::Set();
+  while(TIM2::SR::UIF::NoInterruptPending::IsSet())
+    {
+    }
+  TIM2::SR::UIF::NoInterruptPending::Set();
+  TIM2::CR1::CEN::Disable::Set();
+}
+Led<GPIOC, 5U> led1;
+Led<GPIOC, 8U> led2;
+Led<GPIOC, 9U> led3;
+Led<GPIOA, 5U> led4;
+Leds<&led1, &led2, &led3, &led4 >leds;
+Button<GPIOC, 13U> userButton;
+Chess<leds> chessMode;
+All<leds> allMode;
+Tree<leds> treeMode;
+Modes<&allMode, &treeMode, &chessMode> modes;
+int main()
+{
+  auto delay = 500U;
+   for (;;)
+  {
+    if (userButton.IsPressed())
+   {
+     modes.nextMode();
+     delay += 50U;
+   }
+    modes.update();
+   delayMs(delay);
+    if (delay > 1'000U)
+     {
+       delay = 50U;
+     }
+  }
+return 1;
+}
+
+= Результат представлен ниже.
+
+image::qwer.gif[]
+
+
